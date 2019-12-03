@@ -675,12 +675,16 @@ def set_final_status():
         return
 
     if not is_state('kube-api-endpoint.available'):
-        if 'kube-api-endpoint' in goal_state.get('relations', {}):
-            status = 'waiting'
-        else:
-            status = 'blocked'
-        hookenv.status_set(status, 'Waiting for kube-api-endpoint relation')
-        return
+        relations = goal_state.get('relations', {})
+        # Don't wait for the 'kube-api-endpoint' relation when an OpenStack overlay is being used,
+        # see https://bugs.launchpad.net/charm-kubernetes-master/+bug/1854930
+        if not 'openstack' in relations:
+            if 'kube-api-endpoint' in relations:
+                status = 'waiting'
+            else:
+                status = 'blocked'
+            hookenv.status_set(status, 'Waiting for kube-api-endpoint relation')
+            return
 
     if not is_state('kube-control.connected'):
         if 'kube-control' in goal_state.get('relations', {}):
